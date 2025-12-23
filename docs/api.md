@@ -1,28 +1,20 @@
 # API
 
-All endpoints use hashed `UserId` values encoded as lowercase hex. Payload schemas come from `enigma-node-types` and reject unknown fields.
+Inputs reject unknown fields and return structured JSON errors `{ "error": { "code": "...", "message": "...", "details": { ... } } }`. Handles are 32-byte hex `UserId` values; identities are only returned inside encrypted envelopes.
 
-## POST /register
-- Body: `RegisterRequest` containing `identity`.
-- Responses: `200` with `RegisterResponse { ok: true }` on success, `409` if user already registered, `400` on validation error.
+## Endpoints
+- `POST /register` — `{ handle, envelope }`, where `envelope` is an XChaCha20-Poly1305 payload encrypted with the server envelope key (kid + sender pubkey + nonce + ciphertext). `200 { ok: true }` or `409` on conflict.
+- `POST /resolve` — `{ handle, requester_ephemeral_pubkey_hex }`, returns `{ handle, envelope }` encrypted back to the requester using the active envelope key. Rate limited and can require PoW.
+- `GET /check_user/{handle}` — `{ exists }`, heavily rate limited and PoW-aware to reduce enumeration.
+- `POST /announce` — Presence heartbeat; stored with TTL and purged by GC.
+- `POST /sync` — Merge identities when `allow_sync = true`.
+- `GET /nodes` / `POST /nodes` — List or add nodes with deduplication and max count enforcement.
+- `GET /envelope_pubkey` and `GET /envelope_pubkeys` — Advertise current and historical envelope public keys with kid and optional expiry.
+- `GET /pow/challenge` — Issue PoW challenges when the `pow` feature is enabled and `[pow].enabled = true`.
 
-## GET /resolve/{user_id_hex}
-- Returns `ResolveResponse { identity: Option<PublicIdentity> }` with status `200`. Absence is represented by `None` to reduce probing.
+## Rate limiting and proof-of-work
+- Per-IP token buckets with global and endpoint-specific limits. Exceeding a limit returns `429` with `RATE_LIMITED`.
+- Optional PoW: the server issues `{ challenge, difficulty, expires_ms }` and expects header `x-enigma-pow: {challenge}:{solution}` on `/resolve` and `/check_user` when enabled.
 
-## GET /check_user/{user_id_hex}
-- Returns `CheckUserResponse { exists: bool }` with status `200`.
-
-## POST /announce
-- Body: `Presence`.
-- Returns `200` with `{ "ok": true }` after validation and upsert.
-
-## POST /sync
-- Body: `SyncRequest`.
-- Returns `SyncResponse { merged: u64 }` counting identities inserted.
-
-## GET /nodes
-- Returns `NodesPayload { nodes: Vec<NodeInfo> }`.
-
-## POST /nodes
-- Body: `NodesPayload`.
-- Returns `{ "merged": u64 }` after deduplication and max-size enforcement.
+## TLS
+- TLS is served with rustls when `mode = "tls"` and the `tls` feature is compiled. `client_ca_pem_path` and the `mtls` feature enforce client certificate validation.

@@ -1,12 +1,14 @@
 # Design
 
-The registry focuses solely on directory and presence concerns. It is not an offline message relay and not an SFU. Relay and media duties stay in dedicated services so that this service can remain minimal, auditable, and bandwidth-light.
+The registry only handles directory and presence concerns. Identities are exchanged inside encrypted envelopes keyed by rotating X25519 keys and a server-side pepper to resist scraping and replay. Plain identities are never returned on the wire.
 
-## Resolve semantics
-Resolution returns `200` with an optional identity instead of `404` vs `200` to limit user enumeration surface. Clients interpret the optional field to determine availability.
+## Security controls
+- TLS via rustls for production, with optional mTLS when compiled with the `mtls` feature and configured with a client CA.
+- Per-IP rate limiting with endpoint-specific buckets and optional proof-of-work on `resolve` and `check_user`.
+- Blind indexes derived from the pepper and handle keep the persistence layer hardened against offline enumeration.
 
-## Store and TTL
-An in-memory store holds identities, presences, and node lists. Presences are purged on a timer based on configured TTL. Validation is enforced using `enigma-node-types` to ensure JSON strictness and consistent hashing for `UserId`.
+## Storage and TTL
+The `persistence` feature enables sled-backed storage; otherwise a volatile in-memory store is used. Presences are purged on an interval defined in config to enforce a bounded TTL.
 
 ## Node sync
-Sync merges incoming identities without overwriting existing entries, supporting decentralized sharing of known peers while capping memory usage through configured maximum node count.
+Sync merges new identities without overwriting existing ones and is guarded by `allow_sync` so operators can disable it unless explicitly trusted.

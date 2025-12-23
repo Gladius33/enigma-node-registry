@@ -1,6 +1,6 @@
 [package]
 name = "enigma-node-registry"
-version = "0.0.1"
+version = "0.0.2"
 edition = "2021"
 license = "MIT"
 authors = ["Sébastien TOUILLEUX (Gladius33)"]
@@ -14,18 +14,44 @@ categories = ["network-programming"]
 rust-version = "1.75"
 include = ["src/**", "docs/**", "README.md", "LICENSE", "Cargo.toml", ".gitignore"]
 
+[features]
+default = ["http"]
+http = []
+tls = ["actix-web/rustls-0_21", "rustls", "rustls-pemfile"]
+mtls = ["tls"]
+pow = []
+persistence = ["sled"]
+
 [dependencies]
-thiserror = "1"
-tokio = { version = "1", features = ["rt-multi-thread", "macros", "time", "sync"] }
-axum = "0.7"
-tower = "0.5"
-tower-http = { version = "0.6", features = ["timeout", "trace"] }
+actix-service = "2"
+actix-web = { version = "4.5", features = ["macros"] }
+base64 = "0.22"
+blake3 = "1.5"
+bytes = "1"
+derive_more = "0.99"
+hex = "0.4"
+once_cell = "1.19"
+rand = "0.8"
 serde = { version = "1", features = ["derive"] }
 serde_json = "1"
-uuid = { version = "1", features = ["serde", "v4"] }
+serde_with = { version = "3", features = ["macros", "hex", "base64"] }
+sha2 = "0.10"
+thiserror = "1"
+time = { version = "0.3", features = ["macros"] }
+tokio = { version = "1", features = ["rt-multi-thread", "macros", "time", "sync"] }
+toml = "0.8"
 
+enigma-aead = "0.1.1"
 enigma-node-types = { git = "https://github.com/Gladius33/enigma-node-types", version = "0.0.1" }
 
+rustls = { version = "0.21", optional = true }
+rustls-pemfile = { version = "1", optional = true }
+sled = { version = "0.34", optional = true }
+x25519-dalek = { version = "2", features = ["static_secrets"] }
+
 [dev-dependencies]
-reqwest = { version = "0.12", features = ["json", "rustls-tls"] }
+actix-rt = "2"
+actix-web = { version = "4.5", features = ["macros", "rustls-0_21"] }
+rand = "0.8"
+rcgen = "0.12"
 tokio = { version = "1", features = ["rt-multi-thread", "macros", "time"] }

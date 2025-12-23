@@ -1,7 +1,6 @@
 # Testing
 
-Integration tests start the server in-process on a random localhost port using `tokio::test`. HTTP interactions use `reqwest` to exercise full JSON handling and status codes.
-
-Presence TTL behavior is validated by configuring small TTL and purge intervals, issuing announcements, and invoking the purge helper to confirm removal.
-
-Node sync and registration flows validate validation rules, conflict detection, and deduplication against the in-memory store.
+- HTTP tests use `actix_web::test` to spin up the app in-process and exercise JSON validation, rate limits, and envelope roundtrips.
+- Presence TTL and GC are validated by inserting presences and purging with synthetic timestamps.
+- TLS tests generate self-signed certs via `rcgen` and build rustls configs under the `tls`/`mtls` feature flags.
+- Proof-of-work flows are compiled in when the `pow` feature is enabled and validated through challenge/verification headers.
